@@ -5,11 +5,6 @@ This project investigates the mitonuclear expression and hypoxia index in variou
 
 ## Project Structure
 
-- **Data**: Contains raw and processed data files, including RNA sequencing results, gene lists, and metadata.
-  - `all_hct_and_ko.csv`, `all_mcf7_and_ko.csv`: Aggregated datasets for specific cell lines.
-  - `HCT-116_hypx_2.tsv`, `HPMEC_hypx.tsv`: Hypoxia-related datasets.
-  - `oxphos_genes.txt`, `hypoxia_associated_genes.xlsx`: Gene lists for analysis.
-
 - **Notebooks**: Jupyter notebooks for data analysis and visualization.
   - `mitonuclear_expr_and_hypx_index.ipynb`: Main notebook for analyzing mitonuclear expression and hypoxia index.
   - `integ_rna_seq_analysis.ipynb`: Integrative RNA sequencing analysis.
@@ -19,10 +14,6 @@ This project investigates the mitonuclear expression and hypoxia index in variou
   - `annotation.py`, `correlation_analysis.py`: Scripts for annotation and correlation analysis.
   - `hypoxia_index.py`: Functions for calculating hypoxia indices.
   - `remove_batch_effects.py`: Script for batch effect removal.
-
-- **Figures**: Contains generated plots and visualizations.
-  - `oxphos_by_cell_line_assigned_all_coordinated_uncoordinated_log2foldchange.svg`: Visualization of OXPHOS coordination.
-  - `ribosome_by_cell_line_unassigned_all_coordinated_uncoordinated_log2foldchange.svg`: Ribosome coordination plots.
 
 ## Key Features
 
