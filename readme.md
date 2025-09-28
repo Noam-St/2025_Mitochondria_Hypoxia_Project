@@ -1,7 +1,6 @@
-# 2025 Mitochondria Hypoxia Project
-
+# 2025 Mitochondria Hypoxia Project - GitHub project for the paper [link_here]
 ## Overview
-This project investigates the mitonuclear expression and hypoxia index in various datasets. It includes analysis of RNA sequencing data, hypoxia-related gene expression, and mitonuclear coordination. The project is structured to facilitate the exploration of mitochondrial and nuclear gene interactions under hypoxic conditions.
+In this project, Shtolz et al. investigated the effect of hypoxia on mito-nuclear expression coordination in a large compendium of publicly available RNA-seq data. It includes analysis of RNA sequencing data, hypoxia-related gene expression, and mitonuclear coordination. The project is structured to facilitate the exploration of mitochondrial and nuclear gene interactions under hypoxic conditions.
 
 ## Project Structure
 
@@ -25,7 +24,7 @@ This project investigates the mitonuclear expression and hypoxia index in variou
 
 1. **Setup**:
    - Ensure all dependencies are installed (e.g., `pandas`, `numpy`, `seaborn`, `matplotlib`).
-   - Place raw data files in the `data` directory.
+   - Place raw data files downloaded from [figshare](https://figshare.com/account/home#/projects/237023).
 
 2. **Run Notebooks**:
    - Open and execute the Jupyter notebooks in the specified order for analysis.

@@ -728,7 +728,7 @@ def create_gene_set_matrix(df, path_to_genelist, gene_col = 'gene', dataset_col 
 
         return gene_df, dataset_df
 
-def plot_gene_set_per_dataset(df, dataset_df, title = '', figsize = (5.5,7), x = 'log2FoldChange', y = 'cell_line', hue = False, dodge = False, palette = 'Oranges', savefig = '', alpha = .5, size = 2.5, xlab = 'log2FoldChange', legend = True, legend_title = 'Lombardi h-index', sort_by = 'lombardi_hindex', dataset_sort_by = 'up_or_down', linewidth = 1, width = .5, ascending = False, correlate = True, corr_col = 'oxphos_coordination_value', show_total = True, extra_x_cat = False, ylabel = 'Cell Line', relabel = True):
+def plot_gene_set_per_dataset(df, dataset_df, title = '', figsize = (6,7), x = 'log2FoldChange', y = 'cell_line', hue = False, dodge = False, palette = 'Oranges', savefig = '', alpha = .5, size = 2.5, xlab = 'log2FoldChange', legend = True, legend_title = 'Lombardi h-index', sort_by = 'lombardi_hindex', dataset_sort_by = 'up_or_down', linewidth = 1, width = .5, ascending = False, correlate = True, corr_col = 'oxphos_coordination_value', show_total = True, extra_x_cat = False, ylabel = 'Cell Line', relabel = True, mark_local = True):
     """
     Plot the log2FoldChange of a gene set per dataset
     """
@@ -753,9 +753,9 @@ def plot_gene_set_per_dataset(df, dataset_df, title = '', figsize = (5.5,7), x =
         axes[0].axvline(x = 0.5, linestyle = '--', color = 'red')
         axes[0].axvline(x = 1, linestyle = '--', color = 'orange') 
         # Change ticklabels to percentages
-        axes[0].set_xticks([0.5, 1])
-        axes[0].set_xticklabels(['0.5%', '1%'], fontsize = 8, rotation = 45)
-        axes[0].set_xlim([0, 1.15])
+        axes[0].set_xticks([ 0.5, 1])
+        axes[0].set_xticklabels([ '0.5%', '1%'], rotation = 45)
+        axes[0].set_xlim([0, 1.1])
         ax = axes[1]
         ax2 = axes[2]
     else:
@@ -787,9 +787,10 @@ def plot_gene_set_per_dataset(df, dataset_df, title = '', figsize = (5.5,7), x =
         ax2.set_xlabel(f'N genes', fontsize = 8)
     # Desine
     sns.despine()
-    if extra_x_cat and relabel:
+    if extra_x_cat and relabel and not mark_local:
         axes[0].set_yticklabels([dataset_df['cell_line'].iloc[i] for i in range(len(dataset_df))], fontsize = 8)
-    # X axis label 
+    elif extra_x_cat and relabel and mark_local:
+        axes[0].set_yticklabels([f"{dataset_df[dataset_df[y] == i].cell_line.iloc[0]}*" if 'local' in dataset_df[dataset_df[y] == i].dataset.iloc[0] else dataset_df[dataset_df[y] == i].cell_line.iloc[0] for i in order])    # X axis label 
     ax.set_xlabel(xlab)
     # Y axis label
     ax.set_ylabel('')
@@ -874,7 +875,7 @@ def make_per_dataset_df(df, dataset_col = 'dataset', gene_col = 'gene'):
      dataset_df['max_pct'] = 100
      return dataset_df
 
-def make_coord_plots(df, title, save_name, dataset_df_nuc = pd.DataFrame(), dataset_df_mt = pd.DataFrame(), strip_alpha = .05, kind = 'box', dodge = True, s = 3, hue = 'Genome', y = 'dataset_short', x = 'log2FoldChange', figsize = (5, 6), edgecolor = 'grey', linewidth = 1, ylabel = 'Dataset', xlabel = 'Log2 Fold Change', dataset_sort_by = 'up_or_down', extra_x_cat = False, custom_order = False, barplot_x = 'Percentage of genes'):
+def make_coord_plots(df, title, save_name, dataset_df_nuc = pd.DataFrame(), dataset_df_mt = pd.DataFrame(), strip_alpha = .05, kind = 'box', dodge = True, s = 3, hue = 'Genome', y = 'dataset_short', x = 'log2FoldChange', figsize = (5, 6), edgecolor = 'grey', linewidth = 1, ylabel = 'Dataset', xlabel = 'Log2 Fold Change', dataset_sort_by = 'up_or_down', extra_x_cat = False, custom_order = False, barplot_x = 'Percentage of genes', mark_local = True):
     """
     Make a plot of the coordinated and uncoordinated genes
     """
@@ -953,7 +954,10 @@ def make_coord_plots(df, title, save_name, dataset_df_nuc = pd.DataFrame(), data
         ax.set_xlabel(xlabel)
         ax.set_title(title)
         # Chance the yticklabels to the values of 'cell_line'
-        axes[0].set_yticklabels([dataset_df_nuc[dataset_df_nuc[y] == i].cell_line.iloc[0] for i in order])
+        if not mark_local:
+            axes[0].set_yticklabels([dataset_df_nuc[dataset_df_nuc[y] == i].cell_line.iloc[0] for i in order])
+        else: 
+            axes[0].set_yticklabels([f"{dataset_df_nuc[dataset_df_nuc[y] == i].cell_line.iloc[0]}*" if 'local' in dataset_df_nuc[dataset_df_nuc[y] == i].dataset.iloc[0] else dataset_df_nuc[dataset_df_nuc[y] == i].cell_line.iloc[0] for i in order])
     else:
         ax.set(ylabel = ylabel, xlabel = xlabel, title = title)
     # Add a line at x = 0
