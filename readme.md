@@ -1,4 +1,4 @@
-# 2025 Mitochondria Hypoxia Project - GitHub project for the paper [link_here]
+# 2025 Mitochondria Hypoxia Project - GitHub project for the paper [[link_here](https://www.nature.com/articles/s42003-025-09457-y)]
 ## Overview
 In this project, Shtolz et al. investigated the effect of hypoxia on mito-nuclear expression coordination in a large compendium of publicly available RNA-seq data. It includes analysis of RNA sequencing data, hypoxia-related gene expression, and mitonuclear coordination. The project is structured to facilitate the exploration of mitochondrial and nuclear gene interactions under hypoxic conditions.
 
