@@ -1,5 +1,4 @@
-# Hypoxia Effects on Mito-Nuclear Coordination
-
+# 2025 Mitochondria Hypoxia Project - GitHub project for the paper [[link_here](https://www.nature.com/articles/s42003-025-09457-y)]
 ## Overview
 
 This repository contains the code and analysis pipeline for the publication:
@@ -458,36 +457,4 @@ If you use this code or data, please cite:
 ---
 
 ## Contact
-
-**Corresponding Author:**
-Dan Mishmar, PhD
-Department of Life Sciences
-Ben-Gurion University of the Negev
-Email: dmishmar@bgu.ac.il
-Tel: +972-8-6461355
-
-**First Author:**
-Noam Shtolz
-Department of Life Sciences
-Ben-Gurion University of the Negev
-
----
-
-## Funding
-
-This study was funded by:
-- Israel Science Foundation (grants 372-17, 404-21)
-- US Army Life Science Division (LS 80581-BB)
-- Myles Thaler Genetics and Genomics Research Cathedra (DM)
-- Negev Foundation scholarship for excellent students (NS)
-
----
-
-## License
-
-This article is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License, which permits any non-commercial use, sharing, distribution and reproduction in any medium or format, as long as you give appropriate credit to the original author(s) and the source.
-
----
-
-**Last Updated:** January 2026
-**Version:** 1.0.0
+For questions or collaboration, please contact the project team.
