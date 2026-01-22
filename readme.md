@@ -70,10 +70,10 @@ Analyzes mtDNA-encoded genes and mitochondrial gene regulation pathways.
 
 ---
 
-### 05_sarah_hyp.ipynb
+### 05_hyp_plot.ipynb
 **Purpose:** PRO-seq nascent transcription analysis
 
-Analyzes nascent RNA transcription using PRO-seq data processed through PEPPRO pipeline.
+Analyzes mtDNA nascent RNA transcription using PRO-seq data.
 
 **Generates:**
 - Supplementary Figure S11a: Hypoxia marker transcription validation
@@ -82,8 +82,6 @@ Analyzes nascent RNA transcription using PRO-seq data processed through PEPPRO p
 
 **Input:**
 - PRO-seq data from HeLa, U87, and D407 cells (1% O2, 24h)
-- PEPPRO processed outputs (Supplementary Data S12)
-
 ---
 
 ### 06_pausing_index_z_method.ipynb
@@ -99,9 +97,10 @@ Analyzes mtDNA transcriptional pausing patterns using PRO-seq data with a Z-scor
 ---
 
 ### 07_peppro_analysis.ipynb
-**Purpose:** Additional PRO-seq analysis
+**Purpose:** Analysis of nuclear PRO-seq data generate using PEPPRO pipeline
 
-Supporting analysis for nascent transcription patterns and quality control of PRO-seq data.
+**Generates**
+- Supplementary Figure S11: Nuclear PRO-seq transcription analysis for hypoxia markers, OXPHOS, and mito-ribosome genes
 
 ---
 
