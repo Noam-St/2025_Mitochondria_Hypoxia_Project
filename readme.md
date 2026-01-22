@@ -281,17 +281,6 @@ pip install -r requirements.txt
   doi={10.1038/s42003-025-09457-y}
 }
 ```
-
----
-
-## Contact
-
-**Corresponding Author:**
-Dan Mishmar, PhD
-Department of Life Sciences
-Ben-Gurion University of the Negev
-Email: dmishmar@bgu.ac.il
-
 ---
 
 ## License
