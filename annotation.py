@@ -211,14 +211,19 @@ def TPM_calc(sample):
   
   return sample
 
-def record_check(org):
+def record_check(org, mode = 'org'):
   """
   Check whether org genbank exists, if not download it.
   """
-  try: org_df = pd.read_csv(os.path.join('data', 'final.csv'), index_col='organism')
-  except FileNotFoundError: raise FileNotFoundError('final.csv must be in the data folder!')
-  ID = org_df.loc[org, 'RefSeq']
-  if type(ID) != str: ID = ID.iloc[0]
+  if mode == 'org':
+    try: org_df = pd.read_csv(os.path.join('data', 'final.csv'), index_col='organism')
+    except FileNotFoundError: raise FileNotFoundError('final.csv must be in the data folder!')
+    try: ID = org_df.loc[org, 'RefSeq']
+    except KeyError:
+      return False
+    if type(ID) != str: ID = ID.iloc[0]
+  else:
+    ID = org
   filename = f'{PATH}{slash}genbank_DB{slash}{org}.gbk'
   if not os.path.isfile(filename):
     net_handle = Entrez.efetch(db = 'nucleotide', id = ID, rettype = 'gb', retmode = 'text')
@@ -226,6 +231,8 @@ def record_check(org):
     out_handle.write(net_handle.read())
     net_handle.close()
     out_handle.close()
+    print(f'File {filename} created!')
+  return True
 
 def main(path_to_accs, org_name):
   """

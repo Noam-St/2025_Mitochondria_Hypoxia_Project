@@ -1,23 +1,36 @@
 import pandas as pd
-import os
-import snoop
 import numpy as np
-from scipy.stats import mannwhitneyu
-import seaborn as sns
-import glob, re
-import remove_batch_effects as rbe
-from matplotlib import pyplot as plt
-import consts
+import os
+import glob
+import re
+import random
+import snoop
 from importlib import reload
+from ast import literal_eval
+
+import matplotlib.pyplot as plt
+import matplotlib.path as mpath
+import matplotlib.patches as mpatches
+from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
+import seaborn as sns
+
+import scipy.stats as stats
+from scipy.stats import mannwhitneyu, norm
+
+from sklearn.cluster import KMeans
 from statannot import add_stat_annotation
 from statannotations.Annotator import Annotator
-import scipy.stats as stats
-from scipy.stats import norm
-from matplotlib.patches import Patch
+from Bio import SeqIO, Entrez
+
+import remove_batch_effects as rbe
+import flanking_regions as fr
+import dna_features_translator_class as dftc
+import consts
+
 
 reload(rbe)
 reload(consts)
-from matplotlib.lines import Line2D
 PATH = os.getcwd()
 
 def genelist(file, mode = 'infer'):
@@ -882,7 +895,7 @@ def make_coord_plots(df, title, save_name, dataset_df_nuc = pd.DataFrame(), data
     if len(dataset_df_nuc) > 0:
         dataset_df_nuc['Genome'] = 'NUC'
         dataset_df_mt['Genome'] = 'MT'
-        dataset_df = dataset_df_nuc.append(dataset_df_mt)
+        dataset_df = pd.concat([dataset_df_nuc, dataset_df_mt])
         dataset_df = dataset_df[dataset_df[y].isin(df[y].unique())]
         if extra_x_cat:
             dataset_df_gouped = dataset_df.groupby([y]).agg({'up' : 'mean', 'down' : 'mean', 'mean_lfc' : 'mean', 'cell_line' : 'first', extra_x_cat : 'first'}).reset_index()
@@ -899,7 +912,7 @@ def make_coord_plots(df, title, save_name, dataset_df_nuc = pd.DataFrame(), data
         if extra_x_cat:
             order = dataset_df_gouped.sort_values([extra_x_cat, dataset_sort_by], ascending = [True, False])[y].tolist()
             _, axes = plt.subplots(1, 3, figsize = figsize, sharey = True, gridspec_kw={'width_ratios': [.45, 2, 1]})
-            sns.pointplot(ax = axes[0], x = extra_x_cat, y = y, data = dataset_df_nuc, color = 'tab:red', alpha = .5, join = False, linewidth = 10, edgecolor = 'black', order = order)
+            sns.pointplot(ax = axes[0], x = extra_x_cat, y = y, data = dataset_df_nuc, color = 'tab:red', join = False, linewidth = 10, order = order, markers='o', markersize=10)
             axes[0].set_ylabel(ylabel)  
             # Add line at 0.5 and 1
             axes[0].axvline(x = 0.5, linestyle = '--', color = 'red')
@@ -1003,3 +1016,1427 @@ def plot_gene_clustermap(mat, col_annot = None, col_annot_cols = None, row_annot
 
     if savefig:
         plt.savefig(os.path.join(PATH, 'figures', f'{savefig}'), bbox_inches = 'tight')
+
+
+
+PATH = os.getcwd()
+reload(fr)
+reload(dftc)
+reload(consts)
+
+def Which_tRNA(name, verbosity = 1):
+    """ This code recieves a gene name, tries to match it with common tRNA motifs, and then with any matching values in the replacement dict, if nothing matches, returns None
+    which is later removed"""
+    name = name.replace('*', '')
+    if name in consts.REPLACEMENT_DICT.keys(): return name 
+    if 'trn' in name: return name
+    c=0
+    name=str(name)
+    if 'transfer' in name:
+        name = name.replace('transfer ','t')
+    codon = re.search(r'\(\w{3}\)',name) # Grab codon if it exists
+    if codon: codon = codon.group(0)
+    else: codon=''
+    name = re.sub(pattern=r'\(\w{3}\)',repl = '',string = name)
+    if name in consts.TRNA_DICT.keys():  # if the tRNA is in tRNA-X format, replace with my format and return
+        name = consts.TRNA_DICT[name]
+        return name+codon
+
+    #Following lines try to match with each possible tRNA.
+    if re.match(r't[r,R]\D{1,2}(H|His)',name):
+        name='tRNA-His'
+        
+    if re.match(r't[r,R]\D{1,2}(K|Lys)',name):
+        name='tRNA-Lys'
+        
+    if re.match(r't[r,R]\D{1,2}(R|Arg)',name):
+        name='tRNA-Arg'
+        
+    if re.match(r't[r,R]\D{1,2}(D|Asp)',name):
+        name='tRNA-Asp'
+        
+    if re.match(r't[r,R]\D{1,2}(E|Glu)',name):
+        name='tRNA-Glu'
+        
+    if re.match(r't[r,R]\D{1,2}S',name):
+        name='tRNA-Ser'
+        
+    if re.match(r't[r,R]\D{1,2}T',name):
+        name='tRNA-Thr'
+        
+    if re.match(r't[r,R]\D{1,2}(N|Asn)',name):
+        name='tRNA-Asn'
+        
+    if re.match(r't[r,R]\D{1,2}(Q|Gln)',name):
+        name='tRNA-Gln'
+        
+    if re.match(r't[r,R]\D{1,2}V',name):
+        name='tRNA-Val'
+        
+    if re.match(r't[r,R]\D{1,2}L',name):
+        name='tRNA-Leu'
+        
+    if re.match(r't[r,R]\D{1,2}I',name):
+        name='tRNA-Ile'
+        
+    if re.match(r't[r,R]\D{1,2}M',name):
+        name='tRNA-Met'
+        
+    if re.match(r't[r,R]\D{1,2}(F|Phe)',name):
+        name='tRNA-Phe'
+        
+    if re.match(r't[r,R]\D{1,2}(Y|Tyr)',name):
+        name='tRNA-Tyr'
+        
+    if re.match(r't[r,R]\D{1,2}(W|Trp)',name):
+        name='tRNA-Trp'
+        
+    if re.match(r't[r,R]\D{1,2}P',name):
+        name='tRNA-Pro'
+        
+    if re.match(r't[r,R]\D{1,2}G',name):
+        name='tRNA-Gly'
+        
+    if re.match(r't[r,R]\D{1,2}C',name):
+        name='tRNA-Cys'
+    
+    if re.match(r't[r,R]\D{1,2}A',name):
+        name='tRNA-Ala'
+        
+    for k,v in consts.REPLACEMENT_DICT.items(): # if not tRNA, this loop matches according to replacement dict
+        if name in v:
+            name=k
+            return name
+        if c==len(consts.REPLACEMENT_DICT)-1:
+            name=None
+            return name
+        c=+1
+    try:
+        if name in consts.TRNA_DICT.keys(): # if matched with any of the if's above (for tRNAs), replace with my annotation accordingly.
+            name = consts.TRNA_DICT[name]
+            return name+codon
+    except KeyError:
+        pass
+    if verbosity > 0:
+        print(name)
+    if 'RNA' in name or 'rna' in name:
+        return None
+    elif 'orf' in name or 'ORF' in name:
+        return 'ORFX'
+    else:
+        if verbosity > 0:
+            print(f"Could not replace {name} - returning it")
+        return name
+
+def retrieve_gb(ID) -> str:
+    """
+    Retrieve GenBank record from NCBI given an ID.
+
+    Parameters
+    ----------
+    ID : str
+        The ID of the record to retrieve
+    
+    Returns
+    -------
+    filename : str
+        The path to the record retrieved from NCBI
+    """
+    if not os.path.isdir(os.path.join(PATH, 'genebank.DB')):
+        os.mkdir(os.path.join(PATH, 'genebank.DB'))
+    filename = os.path.join(PATH, 'genebank.DB', ID + '.gbk')
+    if not os.path.isfile(filename):
+        print(f'Downloading {ID}\n')
+        net_handle = Entrez.efetch(db ='nucleotide', id = ID, rettype = 'gb', retmode = 'text')
+        out_handle = open(filename, 'w')
+        out_handle.write(net_handle.read())
+        out_handle.close()
+        net_handle.close()
+        print(f'Saved {ID}\n')
+    return filename
+
+def deseq(sample) -> pd.DataFrame:
+    """
+    Perform DESeq normalization on a sample.
+
+    Parameters
+    ----------
+    sample : pd.DataFrame   
+        The sample to be normalized
+    
+    Returns
+    -------
+    sample : pd.DataFrame
+        The normalized sample
+    """
+    deseq_log = np.log(sample)
+    deseq_log = deseq_log.replace([np.inf, -np.inf], np.nan).dropna(how = 'all')
+    deseq_log['row_mean'] = deseq_log.mean(axis = 1)
+    deseq_log_ratio = deseq_log.loc[:, deseq_log.columns != 'row_mean'].sub(deseq_log.row_mean, axis = 'rows')
+    deseq_log_ratio_median = np.exp(deseq_log_ratio.median(axis = 0))
+    sample = sample.divide(deseq_log_ratio_median)
+    return sample
+
+def deseq_from_long(sample, gene_col, count_col, sample_col) -> pd.DataFrame:
+    """
+    Convert long format to wide format, perform DESeq normalization, and return to long format.
+
+    Parameters
+    ----------
+    sample : pd.DataFrame
+        The long-format dataframe
+    gene_col : str
+        The gene name column
+    count_col : str
+        The raw count column
+    sample_col : str
+        
+
+    Returns
+    -------
+    sample : pd.DataFrame
+        The DESeq-normalized dataframe
+
+    """
+    sample = sample.pivot_table(values = count_col, index = gene_col, columns = sample_col)
+    sample = deseq(sample)
+    sample = sample.reset_index().melt(id_vars = gene_col, value_name = 'junc_deseq')
+    return sample
+
+def mtdna_region(pos, window, total, left, inclusive = True) -> str:
+    """
+    Designed for circular DNA, return a list of positions (INDEX 1 BASED) to the left or right side of pos
+
+    Parameters
+    ----------
+    pos : int
+        The current position to return a window around
+    window : int
+        The size of the window
+    total : int
+        The total size of the DNA
+    left : bool
+        True if the window should be to the left of the
+    inclusive :
+        (Default value = True)
+
+    Returns
+    -------
+    positions : list
+        A list of positions (INDEX 1 BASED) to the left or right side of pos
+    """
+
+    if type(left) != bool: raise TypeError(f'Parameter left must be either True (left side window) or False (right side window! Given {left} instead')
+    if total < window or total < pos:
+        raise ValueError(f'The total size of the DNA must be smaller than both the window and the position!\nParameters given:\nTotal = {total}\nPosition = {pos}\nWindow = {window}')
+    
+    positions = []
+    if left:
+        if pos - window < 1:
+            positions += list(range(total - abs(window - pos) + (1 if inclusive else 0), total + 1))
+            positions += list(range(1, pos + (1 if inclusive else 0)))
+        else:
+            positions += list(range(pos - window + (1 if inclusive else 0), pos + (1 if inclusive else 0)))
+    else: #right
+        if pos + window > total:
+            positions += list(range(1, (pos + window) - total + (0 if inclusive else 1)))
+            positions += list(range(pos + (0 if inclusive else 1), total + 1))
+        else:
+            positions += list(range(pos + (0 if inclusive else 1), pos + window + 1))
+    return positions
+
+def mtdna_distance(y, x, mt_len, left_size):
+    """
+    """
+    if x > y:
+        return -min(x - y, mt_len - x + y)
+    elif abs(mt_len - y) < left_size:
+        return -min(y - x, mt_len - y + x)
+    else:
+        return min(y - x, mt_len - y + x)
+
+def plotly_sample(sample_path, plot_col = 'coverage', window = 100, peaks = False):
+    """
+    Create a plotly graph of a single sample expression, graphs both strands with negative values for light strand and positive values for the heavy strand.
+
+    Parameters
+    ----------
+    sample_path :
+        
+    plot_col :
+        (Default value = 'coverage')
+
+    window :
+        (Default value = 100)
+    peaks :
+        (Default value = False)
+
+    Returns
+    -------
+
+    """
+    sample = pd.read_csv(sample_path, index_col = 0)
+    sample_name = os.path.split(sample_path)[-1].replace('.csv','')
+    pos_col = 'pos_' + plot_col
+    neg_col = 'neg_' + plot_col
+    sample[[pos_col, neg_col]] = sample[[pos_col, neg_col]].fillna(0).rolling(window = window, min_periods = 1).mean()
+
+    sub_sample = sample[['Position', pos_col, neg_col]]
+    sub_sample = sub_sample.rename({pos_col : 'Heavy strand', neg_col : 'Light strand'}, axis = 1)
+    sub_sample['Light strand'] = sub_sample['Light strand'] * -1
+    sub_sample = sub_sample.melt(id_vars = 'Position', value_vars = ['Heavy strand', 'Light strand'], var_name = 'Strand', value_name = 'Coverage')
+    fig = px.line(sub_sample, x = 'Position', y = 'Coverage', color = 'Strand', title = f'Expression profile of {sample_name}')
+    if type(peaks) == pd.DataFrame:
+        for i, peak in peaks.iterrows():
+            fig.add_vline(
+                x = peak.Position, \
+                line_color = 'green' if peak.Type == 'TIS' else 'red',
+                line_dash = 'dash' if peak.Strand == 'Heavy' else 'dot',
+                annotation_text = peak.Strand)
+    
+    return fig
+
+def ratio_score(i, df, strand, up_window = 250, down_window = 50, normalized = False) -> float:
+    """
+    Calculate the ratio of downstream coverage to downstream + upstream coverage, with downstream and upstream defined as right and left or left and right for the heavy strand and light strand respectively.
+
+    Parameters
+    ----------
+    i : int
+        The current position
+    df : pd.DataFrame
+        The dataframe containing the coverage data
+    strand : str
+        The strand to calculate the ratio for
+    up_window : int
+        The upstream window size
+    down_window : int
+        The downstream window size
+    normalized : bool
+        (Default value = False) If True, the ratio will be normalized by the mean of the upstream and downstream windows
+    
+    Returns
+    -------
+    float
+        The ratio of downstream coverage to downstream + upstream coverage
+    
+
+    """
+    strand_name = 'pos' if strand else 'neg'
+    cov_col = 'RPM' if normalized else 'coverage' 
+    total = df.Position.max()
+    if strand:
+        down_window_pos = mtdna_region(i, down_window, total, False)
+        down_mean_cov = df.loc[df.Position.isin(down_window_pos), f'{strand_name}_{cov_col}'].mean() + 1
+        
+        up_window_pos = mtdna_region(i, up_window, total, True)
+        up_mean_cov = df.loc[df.Position.isin(up_window_pos), f'{strand_name}_{cov_col}'].mean() + 1
+    else:
+        down_window_pos = mtdna_region(i, down_window, total, True)
+        down_mean_cov = df.loc[df.Position.isin(down_window_pos), f'{strand_name}_{cov_col}'].mean() + 1
+        
+        up_window_pos = mtdna_region(i, up_window, total, False)
+        up_mean_cov = df.loc[df.Position.isin(up_window_pos), f'{strand_name}_{cov_col}'].mean() + 1
+    
+    # Return the ratio of downstream coverage to downstream + upstream coverages, this ratio is supposed to be low for TERM and high for TIS
+    return down_mean_cov/(up_mean_cov + down_mean_cov)
+
+def confidence_score(i, df, type, strand, normalized = True) -> float:
+    """
+    Defined as the inverse of downstream and upstream ratio for TERM sites and the downstream and upstream ratio for TIS sites. (TIS must have large ratio_scores and TERM must have low ratio scores.
+
+    Parameters
+    ----------
+    i : int
+        The current position
+    df : pd.DataFrame
+        The dataframe containing the coverage data
+    type : str
+        The type of site to calculate the confidence score for
+    strand : str
+        The strand to calculate the ratio for
+    normalized : bool
+        (Default value = False) If True, the ratio will be normalized by the mean of the upstream and downstream windows
+    
+    Returns
+    -------
+    float
+        The confidence score of the site
+    
+    """
+    ratio_sc = ratio_score(i, df, strand, normalized = normalized)
+    if type == 'TERM':
+        confidence_sc = 1 - ratio_sc
+    elif type == 'TIS':
+        confidence_sc = ratio_sc
+    return confidence_sc
+
+def dist_from_source(i, total_len) -> int:
+    """
+    Calculate the mtDNA positions in terms of distance relative to 0 position (negative for left side and positive for right side).
+
+    Parameters
+    ----------
+    i : int
+        The current position
+    total_len : int
+        The total length of the mtDNA region
+    
+    Returns
+    -------
+    int
+        The distance from the source
+    """
+    if i >= total_len/2:
+        return ((total_len - i) + 1) * -1
+    elif i < total_len/2:
+        return i
+
+def z_score(n, mean, std) -> float:
+    """
+    Compute Z-score.
+
+    Parameters
+    ----------
+    n : int 
+        The number to compute the Z-score for
+    mean : float
+        The mean of the distribution
+    std : float
+        The standard deviation of the distribution
+    
+    Returns
+    -------
+    float
+        The Z-score
+    
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Standard_score
+    """
+    try: return (n - mean) / std
+    except ZeroDivisionError: return 0
+
+def scale_min_max(n, mini, maxi, multiply = 1) -> float:
+    """
+    Compute scaled min_max value
+
+    Parameters
+    ----------
+    n : int 
+        The number to compute the scaled value for
+    mini : int
+        The minimum value of the scaled range
+    maxi : int
+        The maximum value of the scaled range
+    
+    Returns
+    -------
+    float
+        The scaled value
+    
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Normalization_(statistics)
+    """
+    try: return ((n - mini) / (maxi - mini)) * multiply
+    except ZeroDivisionError: return 0
+
+def get_medians(df, sep_col, value_col) -> pd.DataFrame:
+    """
+    Grab the median of value_col grouped by sep_col
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The dataframe containing the coverage data
+    sep_col : str
+        The column to group by
+    value_col : str
+        The column to compute the median for
+    
+    Returns
+    -------
+    pd.Series
+        The median of value_col grouped by sep_col
+    """
+    mean_list = []
+    for i in df[sep_col].unique():
+        mean_list.append(df.loc[df[sep_col] == i, value_col].median())
+    return mean_list
+
+def num_sim(n1 : int, n2 : int) -> int:
+    """
+    calculates a similarity score between 2 numbers
+
+    Parameters
+    ----------
+    n1 : int
+        The first number
+    n2 : int
+        The second number
+    
+    Returns
+    -------
+    int
+        The similarity score
+    """
+    return 1 - abs(n1 - n2) / (n1 + n2)
+
+def get_org_name_from_refseq(ID):
+    """
+    Get the organism name from a refseq ID
+
+    Parameters
+    ----------
+    ID : str
+        The refseq ID
+    
+    Returns
+    -------
+    str
+        The organism name
+    """
+    return '_'.join(SeqIO.read(retrieve_gb(ID), 'gb').features[0].qualifiers.get('organism')[0].replace(' ', '_').split('_')[0:2])
+
+def get_org_filtered_expr(org, plotlist = ['RPM'], hline = 'mean', filtered = True, window = 50, tis_term_df = '', dataset_title = False) -> pd.DataFrame:
+    """
+    Iterate over each file in annotated_pileup folder, create a gigantic dataframe of all files, and plot
+    the means of values in plotlist into a coverage_graph plot.
+
+    Parameters
+    ----------
+    org :
+        The organism to plot     
+    plotlist :
+        (Default value = ['RPM']) The list of columns to plot
+    hline :
+        (Default value = 'mean') The value to plot as a horizontal line
+    filtered :
+        (Default value = True) If True, the dataframe will be filtered by the mean of the values in plotlist
+    window :
+        (Default value = 50) The window size to use for the rolling mean
+    tis_term_df :
+        (Default value = '') The dataframe containing the TIS and TERM sites
+    dataset_title :
+        (Default value = False) If True, the title of the plot will be the name of the dataset
+    """
+    title = ''
+    org_initials = ''.join([i[0] for i in org.replace('_',' ').split(' ')]).upper()
+    all_files = glob.glob(os.path.join('data', 'annotated_pileup', f"*{org_initials}.csv"))
+    if all_files == []:
+        return None
+    li = []
+    c=0
+    real_id = ''
+    for filename in all_files:
+        if org_initials not in filename: continue
+        #Count organisms
+        try: df = pd.read_csv(filename, index_col=0, header=0)
+        except pd.EmptyDataError: continue
+        try: id = df.Chromosome.dropna().iloc[0]
+        except IndexError:
+            continue
+        if real_id == '':
+            cur_org = '_'.join(SeqIO.read(retrieve_gb(id), 'gb').features[0].qualifiers.get('organism')[0].replace(' ', '_').split('_')[0:2])
+            if cur_org == org:
+                real_id = id
+            else:
+                continue
+        else:
+            if real_id != id:
+                #print(f'Wrong ID {id}')
+                continue
+        df['org'] = org
+        li.append(df)
+        c+=1
+    if li == []:
+        print('None')
+        return None
+    #Combine all sample junction dfs to a single one
+    annotated_df = pd.concat(li, axis=0, ignore_index=True)
+    agg_dict = {'coverage':'median', 'RPM':'median','RPM':'std', 'z':'median',
+                'ends_ratio':'median', 'Gene':'first', 'Strand':'first'}
+    for i in annotated_df.dataset.unique():
+        cur_df = annotated_df.loc[(annotated_df.dataset == i) & (annotated_df.org == org), :]
+        cur_df = cur_df.groupby('Position').agg(agg_dict).reset_index().sort_values(by = 'Position')
+        if len(li) == 1:
+            cur_df = annotated_df
+        if filtered: cur_df = fr.main(sample = cur_df, filtered = False, org = org.replace('_', ' '), flank = window,
+                                      direction = 'downstream')
+
+        if dataset_title:
+            title = i                              
+        dftc.coverage_graph(org.replace('_', ' '), cur_df, None, plotlist = plotlist, hline = hline, title_org = True, tis_term_df=tis_term_df, custom_title=title)
+
+def falloff_score(row) -> float:
+    """
+    Compute the falloff score for a row
+
+    Parameters
+    ----------
+    row : pd.Series
+        The row to compute the falloff score for
+    
+    Returns
+    -------
+    float
+        The falloff score
+    """
+    st1 = row['left_strand']
+    st2 = row['right_strand']
+    left_exp = row['left_z']
+    right_exp = row['right_z']
+    junc_exp = row['junc_tpm_z']
+    if (st1 == True and st2 == True) or (st1 == True and st2 == False):
+        return (left_exp - junc_exp)
+    if (st1 == False and st2 == False) or (st1 == False and st2 == True):
+        return (right_exp - junc_exp)
+
+def junc_type(row) -> str:
+    """
+    Compute the junction type for a row
+
+    Parameters
+    ----------
+    row : pd.Series
+        The row to compute the junction type for    
+    
+    Returns
+    -------
+    str
+        The junction type
+    """
+    st1 = row['left_strand']
+    st2 = row['right_strand']
+
+    if st1 == True and st2 == True:
+        return 'A' # Both sorrounding genes are in the Heavy strand
+    elif st1 == False and st2 == False:
+        return 'B' # Both sorrounding genes are in the Light strand
+    elif st1 == True and st2 == False:
+        return 'C' # The left gene is in the Heavy strand and the right gene is in the Light strand (head to head)
+    elif st1 == False and st2 == True:
+        return 'D' # The left gene is in the Light strand and the right gene is in the Heavy strand (tail to tail)
+    else:
+        print('Wrong mode! choose either type or falloff!\n')
+
+def custom_boxplot(test_type = 'Mann-Whitney', loc = 'inside', box_pairs = [('DSJ','SSJ')],
+                   t_format = 'star', xlabel = 'Strand switched', ylabel = 'log(expression)', savefig = False, style = 'default', despine = True, **kwargs):
+    """
+    Recieve a FacetPlot object, create a boxplot with **kwargs and use add_stat_annotation to perform a statistical test.
+
+    Parameters
+    ----------
+    test_type :
+        (Default value = 'Mann-Whitney') The statistical test to perform
+    loc :
+        (Default value = 'inside') The location of the annotation
+    box_pairs :
+        (Default value = [('DSJ') ('SSJ')]) The list of box pairs to perform the statistical test on
+    'SSJ')] :
+        
+    t_format :
+        (Default value = 'star') The format of the annotation
+    xlabel :
+        (Default value = 'Strand switched') The xlabel of the boxplot
+    ylabel :
+        (Default value = 'log(expression)') The ylabel of the boxplot
+    **kwargs : 
+        The kwargs to pass to FacetGrid.map_dataframe
+    """
+    if 'DSJ' not in kwargs['data']['strand_switch'].unique(): return 
+    plt.style.use(style)
+    _, ax = plt.subplots(figsize = (4,4))
+    sns.boxplot(ax = ax, **kwargs)
+    ax.set(xlabel = xlabel, ylabel = ylabel, title = kwargs['data']['org'].iloc[0].replace('_', ' '))
+    add_stat_annotation(
+        ax, data=kwargs['data'], x=kwargs['x'], y=kwargs['y'],
+        box_pairs=box_pairs,
+        test = test_type, loc = loc,
+        text_format = t_format,
+        verbose = 2
+        )
+    plt.tight_layout()
+    if despine:
+        sns.despine(ax = ax, offset = 10, trim = False)
+    if savefig:
+        plt.savefig(os.path.join(PATH, 'figures', f'{kwargs["data"]["org"].iloc[0].replace("_", " ")}_{kwargs["data"]["dataset"].iloc[0]}.svg'), dpi = 300)
+    
+def skree_plot(pca) -> None:
+    """
+    Recieve a PCA object, create a skree plot
+
+    Parameters
+    ----------
+    pca : sklearn.decomposition.PCA
+        The PCA object to plot
+    
+    """
+    features = range(pca.n_components_)
+    plt.plot(features, pca.explained_variance_ratio_ * 100, color = 'black', linestyle = '--', marker = 'o')
+    plt.xlabel('PCA Features')
+    plt.ylabel('Variance %')
+    plt.xticks(features)
+    plt.tight_layout()
+    plt.show()
+
+def elbow_plot(pca_reduced_df):
+    """
+    Recieve a dataframe of all PCA components - create elbow plot
+
+    Parameters
+    ----------
+    pca_reduced_df : pd.DataFrame
+        The dataframe of all PCA components
+    """
+    ks = range(1, 10)
+    inertias = []
+    for k in ks:
+        model = KMeans(n_clusters = k)
+        model.fit(pca_reduced_df)
+        inertias.append(model.inertia_)
+    plt.plot(ks, inertias, '-o', color = 'black')
+    plt.xlabel('N clusters (k)')
+    plt.ylabel('Inertia')
+    plt.xticks(ks)
+    plt.tight_layout()
+    plt.show()
+
+def sample_loader(folder, mode = 'random', agg = False):
+    """
+    Recieve a folder, load all samples in the folder
+
+    Parameters
+    ----------  
+    folder : str
+        The folder to load samples from
+    
+    Returns
+    -------
+    sample_path : str
+        The path to the sample
+    sample : pd.DataFrame
+        The sample dataframe
+    sample_name : str
+        The name of the sample
+    """
+    if mode == 'random':
+        sample_path = os.path.join(PATH, 'proseq', 'data', folder, random.choice([i for i in os.listdir(os.path.join(PATH, 'proseq', 'data', folder)) if os.path.split(i)[-1].replace(".csv","") if i.endswith('.csv')]))
+        sample = pd.read_csv(sample_path, index_col = 0)
+        sample_name = os.path.split(sample_path)[-1].replace(".csv","")
+        print(f'The choice is {sample_name}')
+        return sample_path, sample, sample_name
+    elif mode == 'all':
+        samples = []
+        sample_path = os.path.join(PATH, 'proseq', 'data', folder)
+        for i in sorted(os.listdir(sample_path)):
+            if i.endswith('.csv'):
+                sample = pd.read_csv(os.path.join(sample_path, i), index_col = 0)
+                sample['ID'] = i.replace(".csv","")
+                samples.append(sample)
+        if agg:
+            samples = pd.concat(samples)
+            samples = samples.groupby('Position').median().reset_index()
+        sample_name = folder
+        return sample_path, samples, sample_name
+
+def metadata_loader(folder):
+    """
+    Recieve a folder, load all metadata in the folder
+    """
+    metadata = pd.read_csv(os.path.join(PATH, 'proseq', 'data', folder, f'{folder}.tsv'), sep='\t')
+    return metadata
+
+def peaks_loader(name):
+    """
+    Recieve a name, load all peaks in the folder
+
+    Parameters
+    ----------
+    name : str
+        The name of the peaks to load
+    
+    Returns
+    -------
+    peaks : pd.DataFrame
+        The peaks dataframe
+    
+    Example
+    -------
+    >>> peaks_loader('DSJ')
+
+    """
+    peaks_path = os.path.join(PATH, 'proseq', 'data',name + '_refined.csv')
+    try:
+        peaks = pd.read_csv(peaks_path)
+        return peaks
+    except FileNotFoundError:
+        raise FileNotFoundError(f'No peaks for this study name! {name}')
+
+
+def add_label_band(ax, top, bottom, label, *, spine_pos=-0.05, tip_pos=-0.02, orientation = 'vertical'):
+    """Helper function to add bracket around y-tick labels.
+
+    Parameters
+    ----------
+    ax : matplotlib.Axes
+        The axes to add the bracket to
+    top, bottom :
+        The positions in *data* space to bracket on the y-axis
+    label : str
+        The label to add to the bracket
+    spine_pos, tip_pos :
+        The position in *axes fraction* of the spine and tips of the bracket.
+        These will typically be negative
+    top :     
+    bottom :        
+    spine_pos :
+        (Default value = -0.05)
+    tip_pos :
+        (Default value = -0.02)
+    orientation :
+        (Default value = 'vertical')
+
+    Returns
+    -------
+        
+    """
+    # grab the yaxis blended transform
+    transform = ax.get_yaxis_transform()
+
+    # add the bracket
+    bracket = mpatches.PathPatch(
+        mpath.Path(
+            [
+                [tip_pos, top],
+                [spine_pos, top],
+                [spine_pos, bottom],
+                [tip_pos, bottom],
+            ]
+        ),
+        transform=transform,
+        clip_on=False,
+        facecolor="none",
+        edgecolor="k",
+        linewidth=2,
+    )
+    ax.add_artist(bracket)
+
+    # add the label
+    txt = ax.text(
+        spine_pos,
+        (top + bottom) / 2,
+        label,
+        ha="right",
+        va="center",
+        rotation= orientation,
+        clip_on=False,
+        transform=transform,
+    )
+
+    return bracket, txt
+
+def alter_cluster_model(gorder, return_clusters = False):
+    """
+    Receive a gene order, return True if it behaves according to the alternating gene clusters model.
+    Alternative clustering model - groups of more than 2+ protein coding genes that are alternating between the heavy and the light strand.
+
+    Parameters
+    ----------
+    gorder : list
+        List of genes in the exact order they appear on the mtDNA.
+    
+    Returns
+    -------
+    : bool
+        True if the gorder is arranged in AGC and False if it isnt
+    """
+    # Remove tRNA
+    gorder = [i for i in gorder if 'trn' not in i]
+    gcluster = []
+    cluster_count = 0
+    all_clusters = []
+    for gene in gorder:
+        # If the current cluster list is empty, add the gene to it
+        if gcluster == []:
+            gcluster.append(gene)
+            continue 
+        # Check the current gene's strand and the last gene's strand
+        cur_strand = '-' not in gene
+        last_strand = '-' not in gcluster[-1]
+        # If the current gene is the same strand as the last gene, add to cluster and keep going, otherwise end cluster.
+        if cur_strand == last_strand:
+            gcluster.append(gene)
+        else:
+            if len(gcluster) > 1:
+                cluster_count += 1
+            else:
+                return False
+            all_clusters.append(gcluster)
+            gcluster = []
+            gcluster.append(gene)
+    all_clusters.append(gcluster)
+    if cluster_count >= 2:
+        if return_clusters:
+            return all_clusters
+        return True
+    else:
+        return False
+
+def sort_x(value, df, cat_a, cat_b, hue, x, y):
+    """
+    Sort a list of categories (x) according to the pvalue generated by comparing y between hue.
+    """
+    switched = df.loc[(df[x] == value) & (df[hue] == cat_a), y]
+    not_switched = df.loc[(df[x] == value) & (df[hue] == cat_b), y]
+    return mannwhitneyu(switched, not_switched, alternative='less').pvalue        
+
+def plot_y_per_x_by_hue(
+    df, x, y, figpath = None, hue = 'strand_switch',
+    cat_a = 'DSJ',
+    cat_b = 'SSJ',
+    xlab = 'Organism',
+    ylab = 'log(expression)',
+    legend_loc = 'lower right',
+    add_stats = True,
+    test = 'Mann-Whitney',
+    multiple_test_correction = True,
+    verbose = 1,
+    stat_y = None,
+    title = '',
+    style = 'default',
+    despine = True):
+    """
+    Create a nice looking box plot to compare the values of y between hue for each x.
+    Default is comparisons of the junc_tpm expression between DSJ and SSJ for each organism.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The dataframe to plot
+    x : str
+        The column to plot on the x-axis
+    y : str
+        The column to plot on the y-axis
+    figpath : str
+        The path to save the figure to
+    hue : str
+        The column to group by
+    cat_a : str
+        The first category to compare
+    cat_b : str
+        The second category to compare
+    xlab : str
+        The label for the x-axis
+    ylab : str
+        The label for the y-axis
+    legend_loc : str
+        The location of the legend
+    add_stats : bool
+        Whether to add the p-value and t-statistics to the plot
+    test : str
+        The statistical test to use
+    multiple_test_correction : bool
+        Whether to use the Bonferroni correction
+    verbose : int
+        The verbosity level
+    stat_y : str
+        The column to use for the statistics
+    title : str
+        The title of the plot
+    
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The figure object
+    
+    """
+    plt.style.use(style)
+    if not stat_y: stat_y = y
+    to_plot = df.replace('_', ' ', regex = True)
+    order = sorted([i for i in to_plot[x].unique()], key = lambda w : sort_x(value = w, df = to_plot, cat_a = cat_a, cat_b = cat_b, hue = hue, x = x, y = y), reverse = False)
+    box_pairs = [((org, cat_a),(org, cat_b)) for org in to_plot[x].unique()]
+    _, ax = plt.subplots(figsize = (8,6))
+    sns.boxplot(ax = ax, data = to_plot, y = y, x = x, hue = hue, orient = 'v', order = order, palette = ['#f54245', '#4287f5'])
+    if add_stats:
+        ax, _ = add_stat_annotation(ax, data = to_plot, y = stat_y,
+                        x = x, hue = hue, box_pairs = box_pairs, loc = 'inside', test = test, verbose = verbose,
+                    text_format = 'star', comparisons_correction = 'bonferroni' if multiple_test_correction else None, order = order)
+
+    plt.xticks(rotation = 90, fontsize = 11)
+    plt.xlabel(xlab, fontsize = 16)
+    plt.ylabel(ylab, fontsize = 16)
+    plt.title(title, fontsize = 16)
+    plt.legend(loc = legend_loc)
+    plt.tight_layout()
+    if despine:
+        sns.despine(ax = ax, right = True, top = True, trim = True)
+    if figpath:
+        plt.savefig(figpath, dpi = 300)
+
+
+def gene_junc_type(row, df, org_col = 'org', junctype_col = 'strand_switch', DSJ_name = 'DSJ'):
+    """
+    """
+    org_df = df.loc[(df[org_col] == row[org_col]) & (df[junctype_col] == DSJ_name), :]
+    left_genes = list(set(org_df['left_gene'].squeeze()))
+    right_genes = list(set(org_df['right_gene'].squeeze()))
+    all_genes = left_genes + right_genes
+    return 'DSJ' if row.gene in all_genes else 'SSJ'
+
+def generate_2_x_2_conting(
+    df,
+    row_cat = 'Alter_model',
+    comparison_cat = 'strand_switch',
+    col_cat_A = 'DSJ',
+    col_cat_B = 'SSJ',
+    group_factor = 'org',
+    cont_factor = 'junc_tpm'):
+    """
+    Generate a 2x2 chi_squared table for the following factors: significant/non significant and the row_cat.
+    The p-values are generated by comparing the cont_factor values between two categories of comparison_cat for each group_factor category.
+    """
+    AGC_list = []
+    non_AGC_list = []
+    alpha = 0.05/len(df[group_factor].unique())
+    for i in df[group_factor].unique():
+        grp_1 = df.loc[(df[comparison_cat] == col_cat_A) & (df[group_factor] == i), cont_factor]
+        grp_2 = df.loc[(df[comparison_cat] == col_cat_B) & (df[group_factor] == i), cont_factor]
+        AGC = df.loc[df[group_factor] == i, row_cat].iloc[0].squeeze()
+        sign = mannwhitneyu(grp_1, grp_2, alternative = 'less').pvalue < alpha
+        if AGC:
+            AGC_list.append(sign)
+        else:
+            non_AGC_list.append(sign)
+    return np.array([[sum(AGC_list), len(AGC_list) - sum(AGC_list)], [sum(non_AGC_list), len(non_AGC_list) - sum(non_AGC_list)]])
+
+def log2fc(list1, list2, log2 = True):
+    """
+    Calculate the log2 fold change of the means of list1 to list2.
+    """
+    if log2:
+        return np.log2(np.mean(list1)/np.mean(list2))
+    else:
+        return np.mean(list1)/np.mean(list2)
+
+def per_pos_log2fc(df_1, df_2, pos_col = 'Position', expr_col = 'RPM', pos_expr_col = 'pos_RPM', neg_expr_col = 'neg_RPM', log2 = True):
+    """
+    Calculate the per position log2fold change of df_1 to df_2.
+    """
+    merged = df_1[[pos_col, expr_col, pos_expr_col, neg_expr_col]].merge(df_2[[pos_col, expr_col, pos_expr_col, neg_expr_col]], on = [pos_col], how = 'inner', suffixes = ('_1', '_2'))
+    if log2:
+        merged['log2fc'] = np.log2((merged[expr_col + '_1'] + 1)/(merged[expr_col + '_2'] + 1))
+        merged['pos_log2fc'] = np.log2((merged[pos_expr_col + '_1'] + 1)/(merged[pos_expr_col + '_2'] + 1))
+        merged['neg_log2fc'] = np.log2((merged[neg_expr_col + '_1'] + 1)/(merged[neg_expr_col + '_2'] + 1))
+    else:
+        merged['log2fc'] = (merged[expr_col + '_1'] + 1)/(merged[expr_col + '_2'] + 1)
+        merged['pos_log2fc'] = (merged[pos_expr_col + '_1'] + 1)/(merged[pos_expr_col + '_2'] + 1)
+        merged['neg_log2fc'] = (merged[neg_expr_col + '_1'] + 1)/(merged[neg_expr_col + '_2'] + 1)
+    return merged
+
+def log2fc_sd(list1, list2):
+    """
+    Calculate the fold change of the std of list1 to list2.
+    """
+    # Calculate the log2 fold change for all combinations of the two lists
+    log2fc_list = []
+    for i in list1:
+        for j in list2:
+            log2fc_list.append(np.log2(i/j))
+    return np.std(log2fc_list, ddof = 1)
+
+def get_pairs(x):
+    """
+    Returns a list of pairs of genes in a list
+    """
+    try:x = literal_eval(x)
+    except ValueError:pass
+    return [f'{i}_{j}' for i, j in zip(x, x[1:])]
+
+def combine_annotated_pileup(org, saveloc = 'combined_annotated_pileups'):
+    """
+    """
+    org_initials = ''.join([i[0] for i in org.replace('_',' ').split(' ')]).upper()
+    saveloc = os.path.join(PATH, 'data', saveloc)
+    if os.path.exists(os.path.join(saveloc, f'{org}_agg_counts.csv')):
+        print(f'Combined file for {org} already exists!')
+        annotated_df = pd.read_csv(os.path.join(saveloc, f'{org}_agg_counts.csv'), index_col = 0)
+        return annotated_df
+    
+    if not os.path.exists(saveloc):
+        os.mkdir(saveloc)
+    all_files = glob.glob(os.path.join('data', 'annotated_pileup', f"*{org_initials}.csv"))
+    if all_files == []:
+        return None
+    li = []
+    c=0
+    real_id = ''
+    for filename in all_files:
+        #Count organisms
+        try: df = pd.read_csv(filename, index_col=0, header=0) # Read in the csv file
+        except pd.EmptyDataError: continue # If the file is empty, skip it
+        try: id = df.Chromosome.dropna().iloc[0] # Get the RefSeq ID
+        except IndexError:
+            continue
+        if real_id == '':
+            cur_org = '_'.join(SeqIO.read(retrieve_gb(id), 'gb').features[0].qualifiers.get('organism')[0].replace(' ', '_').split('_')[0:2]) # Get the organism name based on the RefSeq ID
+            if cur_org == org: # If the organism is the same as the one we are looking for, save the RefSeq ID
+                real_id = id
+            else:
+                continue
+        else:
+            if real_id != id: # If the RefSeq ID is not the same as the one we are looking for, skip the file
+                #print(f'Wrong ID {id}')
+                continue
+        df['org'] = org 
+        li.append(df)
+        c+=1
+    if li == []:
+        print('None')
+        return None
+    #Combine all sample junction dfs to a single one
+    annotated_df = pd.concat(li, axis=0)
+    agg_dict = {
+        'coverage' : 'sum',
+        'pos_coverage' : 'sum',
+        'neg_coverage' : 'sum',
+        'end_start_counts' : 'sum',
+        'pos_end_start_counts' : 'sum',
+        'neg_end_start_counts' : 'sum',
+        'ends_ratio' : 'mean',
+        'Feature' : 'first',
+        'Gene' : 'first',
+        'Length' : 'first',
+        'Strand' : 'first',
+        'dataset' : 'first'}
+    annotated_df = annotated_df.groupby('Position').agg(agg_dict).reset_index()
+    annotated_df['end_start_log_ratio'] = np.log10((annotated_df['end_start_counts'] + 1)/(annotated_df['coverage'] + 1))
+    annotated_df['pos_end_start_log_ratio'] = np.log10((annotated_df['pos_end_start_counts'] + 1)/(annotated_df['pos_coverage'] + 1))
+    annotated_df['neg_end_start_log_ratio'] = np.log10((annotated_df['neg_end_start_counts'] + 1)/(annotated_df['neg_coverage'] + 1))
+    annotated_df['organism'] = org
+    # Save the annotated_df to a csv file
+    annotated_df.to_csv(os.path.join(saveloc, f'{org}_agg_counts.csv'), index=True)
+    return annotated_df
+
+def convert_to_asterisk(pvalue):
+    """
+    Convert a given p-value float to asterisks based on the scientific convention
+    """
+    if pvalue <= 0.0001:
+        return '***'
+    elif pvalue <= 0.001:
+        return '**'
+    elif pvalue <= 0.05:
+        return '*'
+    else:
+        return ' '
+
+def unite_samples_from_folder(folder):
+  annot = os.path.join(PATH, 'data', folder, '*.csv')
+  annot_df_list = [pd.read_csv(f, index_col = 0) for f in glob.glob(annot)]
+  annot_df = pd.concat(annot_df_list, axis = 0)
+  test = annot_df.groupby('Position').agg({'pos_end_start_counts' : 'sum', 'neg_end_start_counts' : 'sum', 'end_start_counts' :'sum', 'coverage' : 'sum', 'neg_coverage' : 'sum', 'pos_coverage' :'sum', 'Feature' : 'first', 'Gene' : 'first','Length' : 'first', 'Strand' : 'first', 'dataset' : 'first', 'RPM' : 'mean', 'neg_RPM' : 'mean', 'pos_RPM' : 'mean'}).reset_index()
+  test['end_to_coverage'] =np.log2( (test['end_start_counts'] + 1) / (test['coverage'] + 1))
+  test['pos_end_to_coverage'] =np.log2( (test['pos_end_start_counts'] + 1) / (test['pos_coverage'] + 1))
+  test['neg_end_to_coverage'] =np.log2( (test['neg_end_start_counts'] + 1) / (test['neg_coverage'] + 1))
+  return test
+
+def flip_strands(df):
+    """
+    Flip the strands of the dataframe
+    """
+    pos = df[[i for i in df.columns if 'pos' in i]]
+    neg = df[[i for i in df.columns if 'neg' in i]]
+    for col in df.columns:
+        if 'pos' in col:
+            df[col] = neg[col.replace('pos','neg')]
+        elif 'neg' in col:
+            df[col] = pos[col.replace('neg','pos')]
+    return df
+        
+def check_if_trna(gpair, gorder):
+    """
+    Check if a non-tRNA gene junction contains a tRNA gene(s) somewhere between the genes in the gpair
+    """
+    gpair = gpair.split('_')
+    gpair = [Which_tRNA(i) for i in gpair]
+    gorder = [i.replace('-', '').replace('*', '') for i in gorder]
+    for i, v in enumerate(gorder):
+        if v == gpair[0]:
+            try:
+                if gorder[i + 1] == gpair[1]:
+                    return False
+                else:
+                    return True
+            except IndexError: # This means that the gpair[0] gene is the last gene in gorder
+                if gorder[0] == gpair[1]:
+                    return False
+                else:
+                    return True
+
+def check_if_trna_wrapper(row):
+    """
+    Wrapper for check_if_trna to run on df rows
+    """
+    return check_if_trna(row['gpair'], row['Gene_order'])
+
+def cohen_d(group1, group2):
+    """
+    Calculate Cohen's d effect size between two groups (group1 - group2)
+    
+    Parameters
+    ----------
+    group1 : pandas.Series
+        First group of values
+    group2 : pandas.Series
+        Second group of values
+    
+    Returns
+    -------
+    d : float
+        Cohen's d effect size
+    """
+    diff = group1.mean() - group2.mean()
+    pooled_var = (group1.std()**3 + group2.std()**3) / 2
+    d = diff / np.sqrt(pooled_var)
+    return d
+
+def bed_to_per_position_df(bed_df, g_len, keep_cols = []):
+    """
+    Receive a bed df with the following cols [chr, start, end, ...]
+    Convert it into a per-position df with the following cols [Position, is_region] where is_region is a binary 1/0 column depending on whether the position is in the bed file or not
+    """
+    bed_df['Position'] = bed_df.apply(lambda x: list(range(x['start'], x['end'])), axis=1)
+    bed_df = bed_df.explode('Position')
+    bed_df['Position'] = bed_df['Position'].astype(int)
+    bed_df['is_region'] = 1
+    bed_df = bed_df[['Position', 'is_region'] + keep_cols].drop_duplicates(subset = 'Position')
+
+    bed_df = bed_df.set_index('Position').reindex(range(1, g_len + 1)).reset_index().fillna(0)
+    return bed_df
+
+def per_position_to_bed(df, reg_col = 'is_region', pos_col = 'Position'):
+    """
+    Receive a per-position df with the following cols [Position, is_region] where is_region is a binary 1/0 column depending on whether the position is in the bed file or not
+    """
+    bed_df = {'start' : [], 'end' : []}
+    df = df[[reg_col, pos_col]].astype(int)
+    df = df[df[reg_col] != 0]
+    last_pos = 0
+
+    for i, v in df.iterrows():
+        if i == 0:
+            last_pos = v[pos_col]
+            bed_df['start'].append(v[pos_col])
+        elif v[pos_col] == last_pos + 1:
+            last_pos = v[pos_col]
+        else:
+            if last_pos != 0:
+                bed_df['end'].append(last_pos + 1)
+            bed_df['start'].append(v[pos_col])
+            last_pos = v[pos_col]
+    bed_df['end'].append(last_pos + 1)
+    bed_df = pd.DataFrame(bed_df)
+    bed_df['chr'] = 'chrM'
+    return bed_df[['chr', 'start', 'end']]
+
+def find_cov_shift(df_grouped, window, strand, pos_col = 'Position', treatment = 'Hypoxia', control = 'Control',  thresh_ratio_to_window = .9):
+    """
+    Recieve a grouped_df and find the position where the coverage shifts between treatment and control per strand.
+    """
+    length = df_grouped[pos_col].max()
+    df_grouped['diff'] = df_grouped[control] - df_grouped[treatment]
+    df_grouped['signet'] = df_grouped['diff'].apply(lambda x: 1 if x > 0 else -1)
+    rolling_signet_list = []
+    for i in df_grouped[pos_col]:
+        region = mtdna_region(i, window,length, left = not strand)
+        rolling_signet_list.append(df_grouped.loc[df_grouped[pos_col].isin(region), 'signet'].sum())
+    df_grouped['rolling_signet'] = rolling_signet_list
+    df_grouped['threshold'] = df_grouped['rolling_signet'].apply(lambda x: 1 if x > thresh_ratio_to_window * window else 0)
+    thresh = df_grouped[[pos_col, 'threshold']].sort_values(['threshold', pos_col], ascending = [False, strand]).head(1)[pos_col].values[0]
+    return thresh
+
+def find_cov_shift_main(df, window, cov_col = 'RPM', pos_col = 'Position', treatment = 'Hypoxia', control = 'Control', treat_col = 'treatment', thresh_ratio_to_window = .9):
+    """
+    Receive a df, find the position where the coverage shifts between treatment and control per strand.
+    Return the position of the shift for each strand.
+    """
+    df_grouped = df.groupby([pos_col, treat_col])[[f'pos_{cov_col}', f'neg_{cov_col}']].mean().unstack()
+    pos = df_grouped[f'pos_{cov_col}'].reset_index()
+    neg = df_grouped[f'neg_{cov_col}'].reset_index()
+    pos_thresh = find_cov_shift(pos, window, True, pos_col = pos_col, treatment = treatment, control = control, thresh_ratio_to_window = thresh_ratio_to_window)
+    neg_thresh = find_cov_shift(neg, window, False, pos_col = pos_col, treatment = treatment, control = control, thresh_ratio_to_window = thresh_ratio_to_window)
+    return pos_thresh, neg_thresh
+
+def assign_treatment(ID):
+    """
+    Assign the treatment based on the ID using my formula.
+    First letter: cell line abbreviation
+    Second letter: replicate letter
+    Third letter: treatment abbreviation
+    """
+    # Isolate the sample ID
+    ID = ID.split('_')
+    # Find which item in list is the sample ID
+    for i in ID:
+        if len(i) == 3 and i.upper() == i:
+            ID = i
+    if ID[2] == 'C':
+        return 'Control'
+    elif ID[2] == 'H':
+        return 'Hypoxia'
+    elif ID[2] == 'N':
+        return 'Normoxia'
+    else:
+        return 'Unknown'
+
+# Provide a list of positions and a df, set each of the given positions as a focal point with N/2 positions to the left and right, return a df with the focal point and the N positions to the left and right
+def get_focal_points(positions, df, N = 10):
+    new = []
+    for pos in positions:
+        left_positions = mtdna_region(pos = pos, window = N//2, total = 16569, left = True, inclusive = False)
+        right_positions = mtdna_region(pos = pos, window = N//2, total = 16569, left = False, inclusive = True)
+        left_rel_positions = [-1 * i for i  in reversed(range(1, len(left_positions) + 1))]
+        right_rel_positions = [i for i, _ in enumerate(right_positions)]
+        window_positions = left_positions + right_positions
+        window_rel_positions = left_rel_positions + right_rel_positions
+        cur_df = df[df['Position'].isin(window_positions)]
+        cur_df.loc[:,'relative_position'] = window_rel_positions
+        cur_df.loc[:,'focal_point'] = pos
+        new.append(cur_df)
+    return pd.concat(new, axis = 0)
+
+def plot_around_focal_point(dfs, y, neg_sites_df, pos_sites_df, iterate_col = 'cell', no_treatment = False, treat_col = 'treatment', ctrl_cond = 'Control', treat_cond = 'Hypoxia', figsize = (10, 20), savefig = True, add_to_savefig = '', peak_type_col = 'Type', ylabel ='', xlabel = '', wanted_type = 'Pause', point_pos_col = 'focal_point', rel_pos_col = 'relative_position',
+summary_dict = {'neg_ctrl_pause_sites' : [], 'neg_hypoxia_pause_sites':[], 'pos_ctrl_pause_sites' : [], 'pos_hypoxia_pause_sites' : [], 'cell' : []}, alpha = .5
+):
+    """
+    Plot the data around a focal point for each cell line and treatment condition.
+    """
+    strand_name_dict = {'pos' : 'Heavy', 'neg' : 'Light'}
+    plt.style.use('default')
+    for ind, strand in enumerate(['pos', 'neg']):
+        _, axes = plt.subplots(len(dfs[iterate_col].unique()), 1 if no_treatment else 2, figsize=figsize)
+        
+        for i, cell in enumerate(dfs[iterate_col].unique()):
+            # Filter data
+            if strand == 'neg' and not no_treatment:
+                cur_df_hypoxia = neg_sites_df[
+                    (neg_sites_df[iterate_col] == cell) & 
+                    (neg_sites_df[treat_col] == treat_cond)
+                ]
+                cur_df_control = neg_sites_df[
+                    (neg_sites_df[iterate_col] == cell) & 
+                    (neg_sites_df[treat_col] == ctrl_cond)
+                ]
+            elif strand == 'pos' and not no_treatment:
+                cur_df_hypoxia = pos_sites_df[
+                    (pos_sites_df[iterate_col] == cell) & 
+                    (pos_sites_df[treat_col] == treat_cond)
+                ]
+                cur_df_control = pos_sites_df[
+                    (pos_sites_df[iterate_col] == cell) & 
+                    (pos_sites_df[treat_col] == ctrl_cond)
+                ]
+            elif strand == 'neg' and no_treatment:
+                cur_df_hypoxia = neg_sites_df[
+                    (neg_sites_df[iterate_col] == cell)
+                ]
+            elif strand == 'pos' and no_treatment:
+                cur_df_hypoxia = pos_sites_df[
+                    (pos_sites_df[iterate_col] == cell)
+                ]
+            
+            if no_treatment:
+                pauses = len(cur_df.loc[cur_df[peak_type_col] == wanted_type, point_pos_col].unique())
+            else:
+                hypx_pauses = len(cur_df_hypoxia.loc[cur_df_hypoxia[peak_type_col] == wanted_type, point_pos_col].unique())
+                ctrl_pauses = len(cur_df_control.loc[cur_df_control[peak_type_col] == wanted_type, point_pos_col].unique())
+
+            # Add to summary df
+            if no_treatment:
+                summary_dict[f'{strand}_ctrl_pause_sites'].append(pauses)
+            else:
+                summary_dict[f'{strand}_ctrl_pause_sites'].append(ctrl_pauses)
+                summary_dict[f'{strand}_hypoxia_pause_sites'].append(hypx_pauses)
+            if ind ==0 :
+                summary_dict[iterate_col].append(cell)
+
+            # Plot hypoxia data
+            for type_name, group in cur_df_hypoxia.groupby(peak_type_col):
+                cur_ax = axes[i] if no_treatment else axes[i, 0]
+                # Calculate mean and std for each relative_position
+                stats = group.groupby(rel_pos_col)[f'{strand}_{y}'].agg(['mean', 'sem']).reset_index()
+                
+                # Plot mean line
+                line = cur_ax.plot(stats[rel_pos_col], stats['mean'], label=type_name)
+                color = line[0].get_color()
+                
+                # Add confidence bands
+                cur_ax.fill_between(
+                    stats[rel_pos_col],
+                    stats['mean'] - stats['sem'],
+                    stats['mean'] + stats['sem'],
+                    alpha=0.2,
+                    color=color
+                )
+                # Add line at y=0
+                cur_ax.axvline(0, color='black', linestyle='--', alpha = alpha)
+            
+            if not no_treatment:
+                # Plot control data
+                for type_name, group in cur_df_control.groupby(peak_type_col):
+                    # Calculate mean and std for each relative_position
+                    stats = group.groupby(rel_pos_col)[f'{strand}_{y}'].agg(['mean', 'sem']).reset_index()
+                    
+                    # Plot mean line
+                    line = axes[i, 1].plot(stats[rel_pos_col], stats['mean'], label=type_name)
+                    color = line[0].get_color()
+                    
+                    # Add confidence bands
+                    axes[i, 1].fill_between(
+                        stats[rel_pos_col],
+                        stats['mean'] - stats['sem'],
+                        stats['mean'] + stats['sem'],
+                        alpha=0.2,
+                        color=color
+                    )
+                    # Add line at y=0
+                    axes[i, 1].axvline(0, color='black', linestyle='--', alpha = alpha)
+            # Add titles and labels            
+            if no_treatment:
+                axes[i].set_title(f'{strand_name_dict[strand]} Strand - {cell.capitalize()}')
+                if ylabel == '':
+                    axes[i].set_ylabel(' '.join(y.split('_')).capitalize())
+                else:
+                    axes[i].set_ylabel(ylabel)
+                if xlabel == '':
+                    axes[i].set_xlabel(' '.join(rel_pos_col.split('_')).capitalize())
+                else:
+                    axes[i].set_xlabel(' '.join(rel_pos_col.split('_')).capitalize())
+                # Handle legends
+                axes[i].legend()
+            else:
+                axes[i, 0].set_title(f'{strand_name_dict[strand]} Strand - {cell.capitalize()} - {treat_cond}')
+                axes[i, 1].set_title(f'{strand_name_dict[strand]} Strand - {cell.capitalize()} - {ctrl_cond}')
+                if ylabel == '':
+                    axes[i, 0].set_ylabel(' '.join(y.split('_')).capitalize())
+                    axes[i, 1].set_ylabel(' '.join(y.split('_')).capitalize())
+                else:
+                    axes[i, 0].set_ylabel(ylabel)
+                    axes[i, 1].set_ylabel(ylabel)
+                if xlabel == '':
+                    axes[i, 0].set_xlabel(' '.join(rel_pos_col.split('_')).capitalize())
+                    axes[i, 1].set_xlabel(' '.join(rel_pos_col.split('_')).capitalize())
+                else:
+                    axes[i, 0].set_xlabel(' '.join(rel_pos_col.split('_')).capitalize())
+                    axes[i, 1].set_xlabel(' '.join(rel_pos_col.split('_')).capitalize())
+                
+                # Handle legends
+                axes[i, 0].legend()
+        sns.despine()
+        plt.tight_layout()
+        # Savefig
+        if savefig:
+            plt.savefig(os.path.join(PATH, 'proseq', 'figures', 'around_focal_point', f'{strand}_{y}_around_{wanted_type.lower()}_{add_to_savefig + "_" if add_to_savefig != "" else add_to_savefig}sites.png'), dpi=300)
+    return pd.DataFrame(summary_dict)
