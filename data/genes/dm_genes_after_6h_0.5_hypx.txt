@@ -1,0 +1,106 @@
+
+Gene Name and Information	Average SD
+CG5436 Heat shock protein 68 Hsp68	9.61
+CG11765 Peroxiredoxin 2540 Prx2540-2	8.36
+CG12405 Peroxiredoxin 2540 Prx2540-1	8.04
+CG12896 FBgn0033521 CG12896	7.92
+CG11765 RH69586 Prx2540-2 FBgn0033518	7.87
+CG11949 RE08339 cora FBgn0010434	7.54
+CG11765 Prx2540-2 RE05093 Prx2540-2	7.31
+CG4463 Heat shock protein 23 Hsp23	7.26
+CG12896 peroxidase activity	7.19
+CG13499 RE18590 CG13499 FBgn0034680	6.11
+CG32130 CG10745	6.07
+CG32041 LP05734 Hsp22 FBgn0001223	5.79
+CG32130 CG10745	5.77
+CG10078 Phosphoribosylamidotransferase 2	5.76
+CG17725 Phosphoenolpyruvate carboxykinase	5.54
+CG1600 NAD(P)-binding Rossmann-fold	5.43
+CG10078 Phosphoribosylamidotransferase 2	5.26
+CG1600 NAD(P)-binding Rossmann-fold	5.14
+CG10160 Ecdysone-inducible gene L3 ImpL3	4.93
+CG8846 Thor elF4E-BP	4.73
+CG32130 CG10745	4.70
+CG10383 α/β-Hydrolases FBgn003269	4.55
+CG17725 RH08872	4.45
+CG15009 Ecdysone-inducible gene L2 ImpL2	4.39
+CG9434 Frost Fst	4.35
+CG15678 SD16010 FBgn0034647	4.25
+CG16758 purine-nucleoside phosphorylase	4.19
+CG10160 RE58815	4.02
+CG5550 receptor binding	4.00
+CG17325 FBgn0040993	3.92
+CG7219 serine-type endopeptidase inhibitor	3.91
+CG6494 hairy h	3.86
+CG15154 Suppressor of cytokine signaling	3.79
+CG16898 FBgn0034480	3.74
+CG17524 glutathione transferase activity	3.71
+CG1600 NAD(P)-binding Rossmann-fold	3.69
+CG17524 RE40129 GstE3 FBgn0063497	3.69
+CG17325 RH02271 CG17325 FBgn0040993	3.62
+CG5550 RE38860 CG5550 FBgn0034160	3.62
+CG5550 receptor binding	3.60
+CG18239	3.60
+CG5550 receptor binding	3.59
+CG18598 FBgn0038589	3.43
+CG11825 RE25483 CG11825 FBgn0033519	3.35
+CG7224 FBgn0031971	3.35
+CG31769 RH26533 CG31769 FBgn0051769	3.34
+CG11825 FBgn0033519	3.33
+CG16758 purine-nucleoside	3.32
+CG15673 FBgn0034639	3.30
+CG3705 astray aay	3.23
+CG14027 Turandot M TotM	3.22
+CG11652 defense response FBgn0036194	3.21
+CG15678 FBgn0034647	3.21
+CG17325 RH64139	3.19
+CG4427 EP2237	3.16
+CG6611 ectodermal ect FBgn0000451	3.14
+CG30372 CG14758	3.13
+CG11335 LP04931 lox FBgn0039848	3.09
+CG6870 electron transporter activity	3.08
+CG18279 RH07289	3.03
+CG2143	2.92
+CG18279 RH07321 IM10 FBgn0033835	2.91
+CG1488 RH12404 Cyp311a1 FBgn0030367	2.89
+CG32498 LP01841 dnc FBgn0000479	2.89
+CG11796 4-hydroxyphenylpyruvate dioxygenase	2.89
+CG5550 receptor binding	2.88
+CG5550 receptor binding	2.88
+CG6687 serine-type endopeptidase inhibitor	2.88
+CG11270 Tenascin accessory Ten-a	2.86
+CG32137 RE18568 CG32137 FBgn0052137	2.84
+CG14935 α-glucosidase activity	2.81
+CG13321 FBgn0033787	2.81
+CG10578 DnaJ-like-1 DnaJ-1	2.75
+CG8709	2.75
+CG5408 RH06707	2.71
+CG18240	2.69
+CG4190 Heat shock gene 67Bc Hsp67Bc	2.63
+CG3989 ade5	2.60
+CG15829 acyl-CoA binding	2.56
+CG13868 FBgn0034501	2.56
+CG6870 RH01692 CG6870 FBgn0032652	2.52
+CG4192 GH12215 kek3 FBgn0028370	2.51
+CG13321 RE03883 CG13321 FBgn0033787	2.48
+CG4472 Imaginal Disc Growth Factor 1 Idg	2.47
+CG32103 RE56970 CG32103 FBgn0052103	2.46
+CG4899 Photoreceptor dehydrogenase Pdh	2.44
+CG11992 Relish Rel	2.42
+CG5295 PLP-dependent transferases	2.41
+CG11992 Relish Rel	2.41
+CG7590 scylla FBgn0041094	2.39
+CG15745 FBgn0030469	2.28
+CG18279 molecular_function unknown	2.24
+CG6965 RE27241 mthl5 FBgn0037960	2.24
+CG11992 Relish Rel	2.21
+CG12284 thread th	2.20
+CG7756 AT30249	2.17
+CG4181 Glutathione S-transferase D21	2.16
+CG8234 fructose transporter activity	2.14
+CG11992 Relish Rel	2.09
+CG7130 ATPase activity coupled	2.08
+CG5966 triacylglycerol lipase activity	2.07
+CG4104 RE05454 Tps1 FBgn0027560	2.06
+CG9261 Nervana 2 Nrv2	1.82
+CG14029 vrille vri vri	1.72

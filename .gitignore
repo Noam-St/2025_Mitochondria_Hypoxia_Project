@@ -1,8 +1,32 @@
+# Ignore everything by default
 *
+
+# Allow configuration files
 !.gitignore
 !README.md
-!*.py
-!*.ipynb
-!*.R
 !LICENSE
-!final.csv
+!requirements.txt
+
+# Allow Python scripts
+!*.py
+
+# Allow Jupyter notebooks
+!*.ipynb
+
+# Allow R scripts
+!*.R
+
+# Allow data directory structure (gene lists only)
+!data/
+!data/genes/
+!data/genes/*.txt
+!data/genes/*.tsv
+
+# Ignore large data directories and files
+/data/combined_rna_seq/
+/data/proseq/
+/data/results/
+/genbank_DB/
+/data/hyp_genes/
+/data/final.csv
+/data/dataset_summary.xlsx
