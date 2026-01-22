@@ -28,6 +28,8 @@ Processes all RNA-seq datasets and creates a unified DESeq2 results database. Ha
 
 **Output:**
 - Consolidated parquet file containing all DESeq2 results used by subsequent notebooks
+**Generates:**
+Figure 4e: Heatmap of log2FoldChange values for regulatory gnees across all datasets
 
 ---
 
@@ -55,6 +57,8 @@ Analyzes nuclear-encoded mitochondrial genes and metabolic pathways.
 - Figure 2c: Glycolysis gene expression
 - Figure 2d: LDHA vs LDHB expression comparison
 - Figure 2e: Correlation between metabolic pathway response and mito-nuclear coordination score
+- Figure 4a-b: log2FoldChange distributions for Responder and Non-responder cell lines for LONP1 and MTERF3 genes.
+- Figure 4c-d: log2FoldChange distributions for HCT-116 cells exposed to hypoxia with and without HIF1A K.O for nuclear and mtDNA encoded OXPHOS genes.
 
 ---
 
@@ -76,9 +80,7 @@ Analyzes mtDNA-encoded genes and mitochondrial gene regulation pathways.
 Analyzes mtDNA nascent RNA transcription using PRO-seq data.
 
 **Generates:**
-- Supplementary Figure S11a: Hypoxia marker transcription validation
-- Supplementary Figure S11b: nDNA-encoded OXPHOS gene transcription
-- Supplementary Figure S11c: nDNA-encoded mito-ribosome gene transcription
+Figure 5
 
 **Input:**
 - PRO-seq data from HeLa, U87, and D407 cells (1% O2, 24h)
@@ -90,7 +92,6 @@ Analyzes mtDNA nascent RNA transcription using PRO-seq data.
 Analyzes mtDNA transcriptional pausing patterns using PRO-seq data with a Z-score based method.
 
 **Generates:**
-- Figure 5a-c: mtDNA PRO-seq read coverage patterns in HeLa, U87, and D407 cells
 - Figure 6a: Distribution of pausing sites in heavy and light strands
 - Figure 6b-d: Pausing site intensity analysis
 
@@ -100,8 +101,9 @@ Analyzes mtDNA transcriptional pausing patterns using PRO-seq data with a Z-scor
 **Purpose:** Analysis of nuclear PRO-seq data generate using PEPPRO pipeline
 
 **Generates**
-- Supplementary Figure S11: Nuclear PRO-seq transcription analysis for hypoxia markers, OXPHOS, and mito-ribosome genes
-
+- Supplementary Figure S11a: Hypoxia marker transcription validation
+- Supplementary Figure S11b: nDNA-encoded OXPHOS gene transcription
+- Supplementary Figure S11c: nDNA-encoded mito-ribosome gene transcription
 ---
 
 ## Python Modules
