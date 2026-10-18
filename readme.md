@@ -142,17 +142,6 @@ Based on Lombardi et al. (2022) Cell Reports methodology.
 
 ---
 
-### correlation_analysis.py
-**Purpose:** Statistical correlation and mito-nuclear score calculations
-
-**Functions:**
-- `extract_resids()`: Extract regression residuals
-- `correlation_analysis()`: Spearman correlation analysis
-- Mito-nuclear score quantification (captures proportion of coordinated DEGs)
-- Pathway enrichment statistics
-
----
-
 ### annotation.py
 **Purpose:** Gene annotation and GenBank sequence processing
 
@@ -267,6 +256,12 @@ R 4.0+ (for DESeq2)
 ### Install Python Dependencies
 ```bash
 pip install -r requirements.txt
+```
+
+`run_deseq.py` calls DESeq2 through `rpy2`/`diffexpr`, so R must also have DESeq2 installed:
+```r
+install.packages("BiocManager")
+BiocManager::install("DESeq2")
 ```
 
 ---
